@@ -77,7 +77,6 @@ docker compose ps
 * Add a note → refresh → note persists.
 * `docker compose ps` shows both services **Up**.
 
-![img.png](images/img.png)
 <img width="1517" height="500" alt="image" src="https://github.com/user-attachments/assets/051c04da-3616-4259-b0e4-94c5f4de539c" />
 
 <img width="1489" height="494" alt="image" src="https://github.com/user-attachments/assets/191f3bc5-a5b2-41a1-92d5-0290e93ab522" />
