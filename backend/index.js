@@ -25,6 +25,6 @@ app.post('/api/notes', (req, res) => {
 const cors = require('cors');
 
 app.use(cors({
-  origin: 'http://localhost:3000'  
+    origin: process.env.CORS_ORIGIN || '*'
 }));
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
