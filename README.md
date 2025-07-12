@@ -78,10 +78,11 @@ docker compose ps
 * `docker compose ps` shows both services **Up**.
 
 ![img.png](images/img.png)
+<img width="1517" height="500" alt="image" src="https://github.com/user-attachments/assets/051c04da-3616-4259-b0e4-94c5f4de539c" />
 
-![img_1.png](images/img_1.png)
+<img width="1489" height="494" alt="image" src="https://github.com/user-attachments/assets/191f3bc5-a5b2-41a1-92d5-0290e93ab522" />
 
-![img_2.png](images/img_2.png)
+<img width="1595" height="189" alt="image" src="https://github.com/user-attachments/assets/445e2b6a-2af6-4919-800d-b83dd9822689" />
 
 ---
 
