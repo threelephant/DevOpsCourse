@@ -89,7 +89,7 @@ docker compose ps
 
 This repo ships two GitHub Actions workflows that automate builds and deployment.
 
-### 1) CI — Build & Push images
+### 1 CI — Build & Push images
 
 **File:** `.github/workflows/ci.yml`
 
@@ -107,7 +107,7 @@ This repo ships two GitHub Actions workflows that automate builds and deployment
 
 ---
 
-### 2) CD — Deploy to VM
+### 2 CD — Deploy to VM
 
 **File:** `.github/workflows/cd.yml`
 
@@ -129,12 +129,26 @@ This repo ships two GitHub Actions workflows that automate builds and deployment
 ---
 
 
-### First-time CI/CD flow
+### 3 First-time CI/CD flow
 
 1. Ensure SSH access to the VM using the same private key you put in `VM_SSH_KEY`.
 2. Push a commit to `main` → **CI** builds & pushes images to Docker Hub.
 3. **CD** auto-triggers, copies compose, pulls images on the VM, and starts the stack.
 4. Open `http://<VM_PUBLIC_IP>/`.
+
+
+## Optional Extras
+
+### 1 Build cache + artifacts
+
+- **Docker layer cache** is enabled in `ci.yml` using `docker/build-push-action` with `cache-from`/`cache-to` to a registry reference (`…:buildcache`). This speeds up repeat builds dramatically.
+- **Artifact** `deploy-bundle` is produced in CI and consumed by CD when runs are chained; manual CD falls back to repo checkout.
+
+### 2 Reusable workflows with `workflow_call`
+
+Support a clean split using **reusable workflows** and an orchestrator.
+
+
 
 ---
 **Docker User:** plunev <br>
