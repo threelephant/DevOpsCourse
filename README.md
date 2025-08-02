@@ -85,5 +85,57 @@ docker compose ps
 
 ---
 
+## CI/CD with GitHub Actions
+
+This repo ships two GitHub Actions workflows that automate builds and deployment.
+
+### 1) CI — Build & Push images
+
+**File:** `.github/workflows/ci.yml`
+
+**What it does:** builds Docker images for **backend** and **frontend**, pushes to Docker Hub.
+
+**Tags pushed:**
+
+- `plunev/notes-api:latest` and `:<SHORT_SHA>`
+- `plunev/notes-web:latest` and `:<SHORT_SHA>`
+
+**Triggers:**
+
+- On push to `main`
+- Manual run via **Actions → CI — Build & Push images → Run workflow**
+
+---
+
+### 2) CD — Deploy to VM
+
+**File:** `.github/workflows/cd.yml`
+
+**What it does:** copies `deploy/docker-compose.yml` to the VM over SSH, logs into Docker Hub on the VM, then `docker compose pull && up -d`.
+
+**Triggers:**
+
+- Automatically after CI **succeeds** (uses the same commit)
+- Manual run via **Actions → CD — Deploy to VM → Run workflow**
+
+  (Manual runs check out the repo at the selected ref.)
+
+
+**On the VM:**
+
+- If Docker/Compose are missing, the workflow installs them.
+- `PUBLIC_HOST` is set to the VM public IP for CORS.
+
+---
+
+
+### First-time CI/CD flow
+
+1. Ensure SSH access to the VM using the same private key you put in `VM_SSH_KEY`.
+2. Push a commit to `main` → **CI** builds & pushes images to Docker Hub.
+3. **CD** auto-triggers, copies compose, pulls images on the VM, and starts the stack.
+4. Open `http://<VM_PUBLIC_IP>/`.
+
+---
 **Docker User:** plunev <br>
 **Date:** 2025-07-12

@@ -4,12 +4,31 @@ on:
   workflow_run:
     workflows: ["CI — Build & Push images"]
     types: [completed]
+
   workflow_dispatch:
     inputs:
       ref:
-        description: "Git ref to deploy (manual runs only)"
+        description: "Git ref to deploy (manual runs)"
         required: false
         default: main
+
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+        default: main
+    secrets:
+      VM_HOST:
+        required: true
+      VM_USER:
+        required: true
+      VM_SSH_KEY:
+        required: true
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
 
 concurrency:
   group: vm-prod
