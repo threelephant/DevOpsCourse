@@ -2,9 +2,14 @@
 
 on:
   workflow_run:
-    workflows: ["CI — Build & Push images"]
+    workflows: ["CI — Build & Push images"]   # must match CI's `name:` EXACTLY
     types: [completed]
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (manual runs only)"
+        required: false
+        default: main
 
 concurrency:
   group: vm-prod
@@ -15,19 +20,39 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      actions: read
+
     steps:
-      - name: Download deploy bundle
+      - name: Download deploy bundle from CI run
+        if: ${{ github.event_name == 'workflow_run' }}
         uses: actions/download-artifact@v4
         with:
           name: deploy-bundle
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}   # 👈 tell it WHICH run
           path: ./deploy
+
+      # Manual run: just checkout the repo at the requested ref (no artifact exists)
+      - name: Checkout repo (manual run)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      # Sanity check that the compose file exists either way
+      - name: Ensure deploy file present
+        run: test -f deploy/docker-compose.yml
+
+      # --- ship and deploy ---
 
       - name: Copy compose to VM
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VM_HOST }}          # e.g. 135.236.154.209
-          username: ${{ secrets.VM_USER }}      # e.g. peter
-          key: ${{ secrets.VM_SSH_KEY }}        # private key (PEM) content
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
           source: "deploy/docker-compose.yml"
           target: "~/app"
           overwrite: true
@@ -40,25 +65,21 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script_stop: true
-          script: |
-            set -e
-            # Ensure Docker & compose exist (idempotent)
-            if ! command -v docker >/dev/null 2>&1; then
-              curl -fsSL https://get.docker.com | sudo sh
-              sudo apt-get install -y docker-compose-plugin
-              sudo usermod -aG docker $USER || true
-            fi
+        env:
+          PUBLIC_HOST: ${{ secrets.VM_HOST }}
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        script: |
+          set -e
+          if ! command -v docker >/dev/null 2>&1; then
+            curl -fsSL https://get.docker.com | sudo sh
+            sudo apt-get install -y docker-compose-plugin
+            sudo usermod -aG docker $USER || true
+          fi
 
-            mkdir -p ~/app && cd ~/app
-            # Login (pull limit avoidance + private repos)
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          mkdir -p ~/app && cd ~/app
+          echo "${DH_TOKEN}" | docker login -u "${DH_USER}" --password-stdin
 
-            # Pull new images and (re)start
-            PUBLIC_HOST=${{ secrets.VM_HOST }} \
-            docker compose pull
-
-            PUBLIC_HOST=${{ secrets.VM_HOST }} \
-            docker compose up -d --remove-orphans
-
-            # housekeeping
-            docker image prune -f
+          PUBLIC_HOST=${PUBLIC_HOST} docker compose pull
+          PUBLIC_HOST=${PUBLIC_HOST} docker compose up -d --remove-orphans
+          docker image prune -f
