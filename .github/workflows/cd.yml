@@ -1,0 +1,64 @@
+﻿name: CD — Deploy to VM
+
+on:
+  workflow_run:
+    workflows: ["CI — Build & Push images"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: vm-prod
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download deploy bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-bundle
+          path: ./deploy
+
+      - name: Copy compose to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}          # e.g. 135.236.154.209
+          username: ${{ secrets.VM_USER }}      # e.g. peter
+          key: ${{ secrets.VM_SSH_KEY }}        # private key (PEM) content
+          source: "deploy/docker-compose.yml"
+          target: "~/app"
+          overwrite: true
+          strip_components: 1
+
+      - name: Remote install & deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            # Ensure Docker & compose exist (idempotent)
+            if ! command -v docker >/dev/null 2>&1; then
+              curl -fsSL https://get.docker.com | sudo sh
+              sudo apt-get install -y docker-compose-plugin
+              sudo usermod -aG docker $USER || true
+            fi
+
+            mkdir -p ~/app && cd ~/app
+            # Login (pull limit avoidance + private repos)
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+            # Pull new images and (re)start
+            PUBLIC_HOST=${{ secrets.VM_HOST }} \
+            docker compose pull
+
+            PUBLIC_HOST=${{ secrets.VM_HOST }} \
+            docker compose up -d --remove-orphans
+
+            # housekeeping
+            docker image prune -f
