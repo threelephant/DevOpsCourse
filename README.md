@@ -149,8 +149,8 @@ This repo ships two GitHub Actions workflows that automate builds and deployment
 Support a clean split using **reusable workflows** and an orchestrator.
 
 ## CI/CD in action
-<img width="1595" height="189" alt="image" src="https://raw.githubusercontent.com/threelephant/DevOpsCourse/refs/heads/main/images/img_3.png" />
-<img width="1595" height="189" alt="image" src="https://raw.githubusercontent.com/threelephant/DevOpsCourse/refs/heads/main/images/img_4.png" />
+<img width="1486" height="777" alt="image" src="https://raw.githubusercontent.com/threelephant/DevOpsCourse/refs/heads/main/images/img_3.png" />
+<img width="1426" height="580" alt="image" src="https://raw.githubusercontent.com/threelephant/DevOpsCourse/refs/heads/main/images/img_4.png" />
 
 
 
