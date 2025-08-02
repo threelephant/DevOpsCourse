@@ -2,7 +2,7 @@
 
 on:
   workflow_run:
-    workflows: ["CI — Build & Push images"]   # must match CI's name exactly
+    workflows: ["CI — Build & Push images"]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -17,27 +17,23 @@ concurrency:
 
 jobs:
   deploy:
-    # allow manual OR successful CI completion
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
-    # allow cross-workflow artifact access
     permissions:
       contents: read
       actions: read
 
     steps:
-      # CI-triggered run: download artifact from the CI run that just finished
       - name: Download deploy bundle from CI run
         if: ${{ github.event_name == 'workflow_run' }}
         uses: actions/download-artifact@v4
         with:
           name: deploy-bundle
-          run-id: ${{ github.event.workflow_run.id }}   # ← point at that CI run
+          run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: ./deploy
 
-      # Manual run: no artifact exists → just checkout the repo
       - name: Checkout repo (manual run)
         if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/checkout@v4
